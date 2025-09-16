@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Orario Materie</title>
+<style>
+  body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: #121212;
+    color: #eee;
+  }
+  .card {
+    padding: 20px;
+    border-radius: 12px;
+    margin: 10px 0;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.5);
+  }
+  .title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  .subject {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  .now { background: #1E88E5; color: white; }
+  .next { background: #43A047; color: white; }
+  .remaining { background: #FF9800; color: white; }
+  ul { padding-left: 20px; margin: 0; }
+  li { margin-bottom: 5px; }
+  select {
+    padding: 5px;
+    border-radius: 8px;
+    border: none;
+    background: #333;
+    color: #eee;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<select id="daySelect">
+  <option value="">Oggi</option>
+  <option value="Monday">Lunedì</option>
+  <option value="Tuesday">Martedì</option>
+  <option value="Wednesday">Mercoledì</option>
+  <option value="Thursday">Giovedì</option>
+  <option value="Friday">Venerdì</option>
+  <option value="Saturday">Sabato</option>
+</select>
+
+<div class="card now">
+  <div class="title">Materia attuale:</div>
+  <div class="subject" id="nowSubject">-</div>
+</div>
+
+<div class="card next">
+  <div class="title">Prossima materia:</div>
+  <div class="subject" id="nextSubject">-</div>
+</div>
+
+<div class="card remaining">
+  <div class="title">Materie:</div>
+  <ul id="remainingSubjects"></ul>
+</div>
+
+<script>
+const schedule = {
+  Monday:['S.T.A. INF','RELIGIONE','INGLESE','CHIMICA','FISICA'],
+  Tuesday:['S.T.A. INF','STORIA','CHIMICA','LAB. TTRG','MATEMATICA','INGLESE'],
+  Wednesday:['GRAMMATICA','MATEMATICA','MATEMATICA','SC. MOT. SPORT','SC. MOT. SPORT'],
+  Thursday:['DIRITTO - EC.','LAB. FISICA','BIOLOGIA','T.T.R.G.','ANTOLOGIA','ANTOLOGIA'],
+  Friday:['GRAMMATICA','LAB. CHIMICA','FISICA','BIOLOGIA','MATEMATICA'],
+  Saturday:['T.T.R.G.','S.T.A. INF','INGLESE','DIRITTO - EC.','STORIA']
+};
+
+const times = {
+  Monday:['08:05','09:05','10:05','11:05','12:05'],
+  Tuesday:['08:05','09:05','10:05','11:05','12:05','13:05'],
+  Wednesday:['08:05','09:05','10:05','11:05','12:05'],
+  Thursday:['08:05','09:05','10:05','11:05','12:05','13:05'],
+  Friday:['08:05','09:05','10:05','11:05','12:05'],
+  Saturday:['08:05','09:05','10:05','11:05','12:05']
+};
+
+function updateSchedule(dayOverride = null) {
+  const now = new Date();
+  const weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  let day = dayOverride || weekdays[now.getDay()];
+  let dayIndex = now.getDay();
+
+  if(day === 'Sunday') { 
+    day = 'Monday';
+    dayIndex = 1;
+  }
+
+  const todaySchedule = schedule[day];
+  const todayTimes = times[day];
+
+  let nowSub='nessuna materia ora';
+  let nextSub='fine lezioni';
+  let remaining = [];
+  let inClass = false;
+  let currentIndex = -1;
+
+  if(!dayOverride){ // comportamento normale per "Oggi"
+    for(let i=0;i<todaySchedule.length;i++){
+      const [h,m] = todayTimes[i].split(':');
+      const classTime = new Date();
+      classTime.setHours(h,m,0,0);
+      const classEnd = new Date(classTime);
+      classEnd.setHours(classTime.getHours()+1);
+
+      if(now>=classTime && now<classEnd){
+        nowSub = todaySchedule[i];
+        currentIndex = i;
+        inClass = true;
+        break;
+      }
+    }
+
+    if(inClass){
+      if(currentIndex+1 < todaySchedule.length){
+        nextSub = todaySchedule[currentIndex+1];
+        remaining = todaySchedule.slice(currentIndex+2);
+      } else {
+        nextSub = 'fine lezioni';
+        remaining = [];
+      }
+    } else {
+      let nextDayIndex = (dayIndex % 6) + 1;
+      if(nextDayIndex > 6) nextDayIndex = 1;
+      let nextDay = weekdays[nextDayIndex];
+      nowSub = 'nessuna materia ora';
+      nextSub = schedule[nextDay][0];
+      remaining = schedule[nextDay].slice(1);
+    }
+  } else { 
+    // giorno selezionato → mostra tutto senza materia attuale / prossima
+    nowSub = '-';
+    nextSub = '--';
+    remaining = todaySchedule.slice();
+  }
+
+  document.getElementById('nowSubject').innerText = nowSub;
+  document.getElementById('nextSubject').innerText = nextSub;
+
+  const remList = document.getElementById('remainingSubjects');
+  remList.innerHTML = '';
+  remaining.forEach(sub => {
+    const li = document.createElement('li');
+    li.innerText = sub;
+    remList.appendChild(li);
+  });
+}
+
+document.getElementById('daySelect').addEventListener('change', (e)=>{
+  const val = e.target.value;
+  if(val) updateSchedule(val);
+  else updateSchedule(); // Oggi → ora reale
+});
+
+setInterval(()=>{ 
+  if(!document.getElementById('daySelect').value) updateSchedule(); 
+}, 30000);
+
+updateSchedule();
+</script>
+
+</body>
+</html>
