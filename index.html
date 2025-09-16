@@ -105,6 +105,7 @@ function updateSchedule(dayOverride = null) {
   const oggiISO = now.toISOString().split('T')[0];
   const festivi = []; // aggiungi qui date festivi come "2025-12-25"
 
+  // controlla giorno festivo o domenica
   if(day === 'Sunday' || festivi.includes(oggiISO)){
     document.getElementById('nowSubject').innerText = "SpongeBob oggi non lavora 🧽";
     document.getElementById('nextSubject').innerText = '--';
@@ -117,10 +118,22 @@ function updateSchedule(dayOverride = null) {
   const todayTimes = times[day];
 
   let nowSub='nessuna materia ora';
-  let nextSub='fine lezioni';
+  let nextSub='--';
   let remaining = [];
   let currentIndex = -1;
   let endTime = null;
+
+  const ora = now.getHours();
+  const min = now.getMinutes();
+
+  // fuori orario scolastico 8:05 - 14:05
+  if(ora < 8 || (ora >= 14 && min > 5)){
+    document.getElementById('nowSubject').innerText = "nessuna materia ora";
+    document.getElementById('nextSubject').innerText = "--";
+    document.getElementById('remainingSubjects').innerHTML = '';
+    document.getElementById('countdown').innerText = '';
+    return;
+  }
 
   if(!dayOverride){
     for(let i=0;i<todaySchedule.length;i++){
@@ -129,9 +142,11 @@ function updateSchedule(dayOverride = null) {
       classStart.setHours(h,m,0,0);
 
       const classEnd = new Date();
-      classEnd.setHours(h+1,m,0,0); // fine esatta con :05
-      if(i === todaySchedule.length-1 && todayTimes[i+1] !== undefined){
-        classEnd.setHours(parseInt(todayTimes[i+1].split(':')[0]), parseInt(todayTimes[i+1].split(':')[1]), 0, 0);
+      if(i === todayTimes.length-1){ 
+        classEnd.setHours(14,5,0,0); // ultima ora finisce max alle 14:05
+      } else {
+        const [nh,nm] = todayTimes[i+1].split(':');
+        classEnd.setHours(nh,nm,0,0);
       }
 
       if(now >= classStart && now < classEnd){
@@ -142,15 +157,13 @@ function updateSchedule(dayOverride = null) {
       }
     }
 
-    if(currentIndex >= 0){
-      nextSub = currentIndex+1 < todaySchedule.length ? todaySchedule[currentIndex+1] : 'fine lezioni';
+    if(currentIndex >=0){
+      nextSub = currentIndex+1 < todaySchedule.length ? todaySchedule[currentIndex+1] : '--';
       remaining = todaySchedule.slice(currentIndex+2);
     } else {
-      let nextDayIndex = (weekdays.indexOf(day)+1) % 7;
-      let nextDay = weekdays[nextDayIndex];
       nowSub = 'nessuna materia ora';
-      nextSub = schedule[nextDay][0];
-      remaining = schedule[nextDay].slice(1);
+      nextSub = '--';
+      remaining = [];
     }
   } else {
     nowSub = '-';
