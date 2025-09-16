@@ -3,41 +3,52 @@
 <head>
 <meta charset="utf-8">
 <title>Orario Materie</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- importantissimo per mobile -->
 <style>
   body {
     font-family: sans-serif;
     margin: 0;
-    padding: 20px;
+    padding: 10px;
     background: #121212;
     color: #eee;
   }
   .card {
-    padding: 20px;
+    padding: 15px;
     border-radius: 12px;
-    margin: 10px 0;
+    margin: 8px 0;
     box-shadow: 0 3px 6px rgba(0,0,0,0.5);
   }
   .title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
     margin-bottom: 5px;
   }
   .subject {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: bold;
+    word-wrap: break-word;
   }
   .now { background: #1E88E5; color: white; }
   .next { background: #43A047; color: white; }
   .remaining { background: #FF9800; color: white; }
   ul { padding-left: 20px; margin: 0; }
-  li { margin-bottom: 5px; }
+  li { margin-bottom: 5px; font-size: 16px; }
   select {
-    padding: 5px;
+    width: 100%;
+    padding: 8px;
     border-radius: 8px;
     border: none;
     background: #333;
     color: #eee;
     margin-bottom: 10px;
+    font-size: 16px;
+  }
+
+  /* migliora responsive per telefoni piccoli */
+  @media (max-width: 480px) {
+    .subject { font-size: 18px; }
+    li { font-size: 14px; }
+    .title { font-size: 14px; }
   }
 </style>
 </head>
@@ -69,6 +80,7 @@
 </div>
 
 <script>
+// stessa logica JS di prima
 const schedule = {
   Monday:['S.T.A. INF','RELIGIONE','INGLESE','CHIMICA','FISICA'],
   Tuesday:['S.T.A. INF','STORIA','CHIMICA','LAB. TTRG','MATEMATICA','INGLESE'],
@@ -107,7 +119,7 @@ function updateSchedule(dayOverride = null) {
   let inClass = false;
   let currentIndex = -1;
 
-  if(!dayOverride){ // comportamento normale per "Oggi"
+  if(!dayOverride){ // comportamento "Oggi"
     for(let i=0;i<todaySchedule.length;i++){
       const [h,m] = todayTimes[i].split(':');
       const classTime = new Date();
@@ -140,7 +152,7 @@ function updateSchedule(dayOverride = null) {
       remaining = schedule[nextDay].slice(1);
     }
   } else { 
-    // giorno selezionato → mostra tutto senza materia attuale / prossima
+    // giorno selezionato → tutto
     nowSub = '-';
     nextSub = '--';
     remaining = todaySchedule.slice();
@@ -161,7 +173,7 @@ function updateSchedule(dayOverride = null) {
 document.getElementById('daySelect').addEventListener('change', (e)=>{
   const val = e.target.value;
   if(val) updateSchedule(val);
-  else updateSchedule(); // Oggi → ora reale
+  else updateSchedule(); // Oggi
 });
 
 setInterval(()=>{ 
@@ -173,4 +185,3 @@ updateSchedule();
 
 </body>
 </html>
-
