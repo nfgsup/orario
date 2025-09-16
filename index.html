@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Orario Materie</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- importantissimo per mobile -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   body {
     font-family: sans-serif;
@@ -43,8 +43,6 @@
     margin-bottom: 10px;
     font-size: 16px;
   }
-
-  /* migliora responsive per telefoni piccoli */
   @media (max-width: 480px) {
     .subject { font-size: 18px; }
     li { font-size: 14px; }
@@ -67,6 +65,7 @@
 <div class="card now">
   <div class="title">Materia attuale:</div>
   <div class="subject" id="nowSubject">-</div>
+  <div id="countdown"></div>
 </div>
 
 <div class="card next">
@@ -80,7 +79,6 @@
 </div>
 
 <script>
-// stessa logica JS di prima
 const schedule = {
   Monday:['S.T.A. INF','RELIGIONE','INGLESE','CHIMICA','FISICA'],
   Tuesday:['S.T.A. INF','STORIA','CHIMICA','LAB. TTRG','MATEMATICA','INGLESE'],
@@ -103,11 +101,16 @@ function updateSchedule(dayOverride = null) {
   const now = new Date();
   const weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   let day = dayOverride || weekdays[now.getDay()];
-  let dayIndex = now.getDay();
 
-  if(day === 'Sunday') { 
-    day = 'Monday';
-    dayIndex = 1;
+  const oggiISO = now.toISOString().split('T')[0];
+  const festivi = []; // aggiungi qui date festivi come "2025-12-25"
+
+  if(day === 'Sunday' || festivi.includes(oggiISO)){
+    document.getElementById('nowSubject').innerText = "SpongeBob oggi non lavora 🧽";
+    document.getElementById('nextSubject').innerText = '--';
+    document.getElementById('remainingSubjects').innerHTML = '';
+    document.getElementById('countdown').innerText = '';
+    return;
   }
 
   const todaySchedule = schedule[day];
@@ -116,43 +119,40 @@ function updateSchedule(dayOverride = null) {
   let nowSub='nessuna materia ora';
   let nextSub='fine lezioni';
   let remaining = [];
-  let inClass = false;
   let currentIndex = -1;
+  let endTime = null;
 
-  if(!dayOverride){ // comportamento "Oggi"
+  if(!dayOverride){
     for(let i=0;i<todaySchedule.length;i++){
       const [h,m] = todayTimes[i].split(':');
-      const classTime = new Date();
-      classTime.setHours(h,m,0,0);
-      const classEnd = new Date(classTime);
-      classEnd.setHours(classTime.getHours()+1);
+      const classStart = new Date();
+      classStart.setHours(h,m,0,0);
 
-      if(now>=classTime && now<classEnd){
+      const classEnd = new Date();
+      classEnd.setHours(h+1,m,0,0); // fine esatta con :05
+      if(i === todaySchedule.length-1 && todayTimes[i+1] !== undefined){
+        classEnd.setHours(parseInt(todayTimes[i+1].split(':')[0]), parseInt(todayTimes[i+1].split(':')[1]), 0, 0);
+      }
+
+      if(now >= classStart && now < classEnd){
         nowSub = todaySchedule[i];
         currentIndex = i;
-        inClass = true;
+        endTime = classEnd;
         break;
       }
     }
 
-    if(inClass){
-      if(currentIndex+1 < todaySchedule.length){
-        nextSub = todaySchedule[currentIndex+1];
-        remaining = todaySchedule.slice(currentIndex+2);
-      } else {
-        nextSub = 'fine lezioni';
-        remaining = [];
-      }
+    if(currentIndex >= 0){
+      nextSub = currentIndex+1 < todaySchedule.length ? todaySchedule[currentIndex+1] : 'fine lezioni';
+      remaining = todaySchedule.slice(currentIndex+2);
     } else {
-      let nextDayIndex = (dayIndex % 6) + 1;
-      if(nextDayIndex > 6) nextDayIndex = 1;
+      let nextDayIndex = (weekdays.indexOf(day)+1) % 7;
       let nextDay = weekdays[nextDayIndex];
       nowSub = 'nessuna materia ora';
       nextSub = schedule[nextDay][0];
       remaining = schedule[nextDay].slice(1);
     }
-  } else { 
-    // giorno selezionato → tutto
+  } else {
     nowSub = '-';
     nextSub = '--';
     remaining = todaySchedule.slice();
@@ -163,22 +163,35 @@ function updateSchedule(dayOverride = null) {
 
   const remList = document.getElementById('remainingSubjects');
   remList.innerHTML = '';
-  remaining.forEach(sub => {
+  remaining.forEach(sub=>{
     const li = document.createElement('li');
     li.innerText = sub;
     remList.appendChild(li);
   });
+
+  // countdown
+  const cd = document.getElementById('countdown');
+  if(endTime){
+    const diffSec = Math.floor((endTime-now)/1000);
+    if(diffSec>0){
+      const min = Math.floor(diffSec/60);
+      const sec = diffSec%60;
+      cd.innerText = `Finisce tra ${min}m ${sec}s`;
+    } else {
+      cd.innerText = '';
+    }
+  } else {
+    cd.innerText = '';
+  }
 }
 
-document.getElementById('daySelect').addEventListener('change', (e)=>{
-  const val = e.target.value;
-  if(val) updateSchedule(val);
-  else updateSchedule(); // Oggi
+document.getElementById('daySelect').addEventListener('change', e=>{
+  updateSchedule(e.target.value || null);
 });
 
-setInterval(()=>{ 
-  if(!document.getElementById('daySelect').value) updateSchedule(); 
-}, 30000);
+setInterval(()=>{
+  if(!document.getElementById('daySelect').value) updateSchedule();
+},1000);
 
 updateSchedule();
 </script>
