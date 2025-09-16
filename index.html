@@ -101,11 +101,10 @@ function updateSchedule(dayOverride = null) {
   const now = new Date();
   const weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   let day = dayOverride || weekdays[now.getDay()];
-
   const oggiISO = now.toISOString().split('T')[0];
   const festivi = []; // aggiungi qui date festivi come "2025-12-25"
 
-  // controlla giorno festivo o domenica
+  // domenica o festivo
   if(day === 'Sunday' || festivi.includes(oggiISO)){
     document.getElementById('nowSubject').innerText = "SpongeBob oggi non lavora 🧽";
     document.getElementById('nextSubject').innerText = '--';
@@ -119,56 +118,35 @@ function updateSchedule(dayOverride = null) {
 
   let nowSub='nessuna materia ora';
   let nextSub='--';
-  let remaining = [];
-  let currentIndex = -1;
+  let remaining = todaySchedule.slice();
   let endTime = null;
 
   const ora = now.getHours();
   const min = now.getMinutes();
+  const inOrario = (ora>8 || (ora===8 && min>=5)) && (ora<14 || (ora===14 && min<=5));
 
-  // fuori orario scolastico 8:05 - 14:05
-  if(ora < 8 || (ora >= 14 && min > 5)){
-    document.getElementById('nowSubject').innerText = "nessuna materia ora";
-    document.getElementById('nextSubject').innerText = "--";
-    document.getElementById('remainingSubjects').innerHTML = '';
-    document.getElementById('countdown').innerText = '';
-    return;
-  }
-
-  if(!dayOverride){
+  if(inOrario && !dayOverride){
     for(let i=0;i<todaySchedule.length;i++){
       const [h,m] = todayTimes[i].split(':');
       const classStart = new Date();
       classStart.setHours(h,m,0,0);
 
       const classEnd = new Date();
-      if(i === todayTimes.length-1){ 
-        classEnd.setHours(14,5,0,0); // ultima ora finisce max alle 14:05
+      if(i===todayTimes.length-1){ 
+        classEnd.setHours(14,5,0,0);
       } else {
         const [nh,nm] = todayTimes[i+1].split(':');
         classEnd.setHours(nh,nm,0,0);
       }
 
-      if(now >= classStart && now < classEnd){
+      if(now>=classStart && now<classEnd){
         nowSub = todaySchedule[i];
-        currentIndex = i;
         endTime = classEnd;
+        remaining = todaySchedule.slice(i+2);
+        nextSub = i+1 < todaySchedule.length ? todaySchedule[i+1] : '--';
         break;
       }
     }
-
-    if(currentIndex >=0){
-      nextSub = currentIndex+1 < todaySchedule.length ? todaySchedule[currentIndex+1] : '--';
-      remaining = todaySchedule.slice(currentIndex+2);
-    } else {
-      nowSub = 'nessuna materia ora';
-      nextSub = '--';
-      remaining = [];
-    }
-  } else {
-    nowSub = '-';
-    nextSub = '--';
-    remaining = todaySchedule.slice();
   }
 
   document.getElementById('nowSubject').innerText = nowSub;
@@ -182,20 +160,16 @@ function updateSchedule(dayOverride = null) {
     remList.appendChild(li);
   });
 
-  // countdown
+  // countdown solo in orario scolastico
   const cd = document.getElementById('countdown');
-  if(endTime){
+  if(endTime && inOrario){
     const diffSec = Math.floor((endTime-now)/1000);
     if(diffSec>0){
       const min = Math.floor(diffSec/60);
       const sec = diffSec%60;
       cd.innerText = `Finisce tra ${min}m ${sec}s`;
-    } else {
-      cd.innerText = '';
-    }
-  } else {
-    cd.innerText = '';
-  }
+    } else cd.innerText = '';
+  } else cd.innerText = '';
 }
 
 document.getElementById('daySelect').addEventListener('change', e=>{
