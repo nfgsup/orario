@@ -1,354 +1,258 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Orario Materie</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-      @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap");
+<head>
+<meta charset="utf-8">
+<title>Orario Materie</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
-      body {
-        font-family: "Roboto", sans-serif;
-        margin: 0;
-        padding: 10px;
-        background: #121212;
-        color: #eee;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
+  body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 10px;
+    background: #121212;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: 14px;
+    margin: 10px 0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    background: #1e1e1e;
+  }
+
+  .title { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+  .subject { font-size: 20px; font-weight: 700; word-wrap: break-word; }
+  .now { background: #1E88E5; color: white; }
+  .next { background: #43A047; color: white; }
+  .remaining { background: #FF9800; color: white; }
+  .warning { background: #D32F2F; color: white; }
+
+  ul { padding-left: 20px; margin: 0; }
+  li { margin-bottom: 5px; font-size: 16px; }
+
+  select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: #333;
+    color: #eee;
+    margin-bottom: 15px;
+    font-size: 16px;
+  }
+
+  #footer {
+    margin-top: auto;
+    text-align: center;
+    padding: 15px 0;
+    font-size: 16px;
+    color: #aaa;
+    background: #1a1a1a;
+    border-top: 1px solid #333;
+  }
+
+  @media (max-width: 480px) {
+    .subject { font-size: 18px; }
+    li { font-size: 14px; }
+    .title { font-size: 14px; }
+    #footer { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<select id="daySelect">
+  <option value="">Oggi</option>
+  <option value="Monday">Lunedì</option>
+  <option value="Tuesday">Martedì</option>
+  <option value="Wednesday">Mercoledì</option>
+  <option value="Thursday">Giovedì</option>
+  <option value="Friday">Venerdì</option>
+  <option value="Saturday">Sabato</option>
+</select>
+
+<div class="card now">
+  <div class="title">Materia attuale:</div>
+  <div class="subject" id="nowSubject">-</div>
+  <div id="countdown"></div>
+</div>
+
+<div class="card next">
+  <div class="title">Prossima materia:</div>
+  <div class="subject" id="nextSubject">-</div>
+</div>
+
+<div class="card remaining">
+  <div class="title">Materie:</div>
+  <ul id="remainingSubjects"></ul>
+</div>
+
+<div class="card warning">
+  <div class="title">Avvertimenti:</div>
+  <div id="warningsList">-</div>
+</div>
+
+<div id="footer">
+  <span id="dateTime"></span>
+</div>
+
+<script>
+const schedule = {
+  Monday:['S.T.A. INF','Religione','Inglese','Chimica','Fisica'],
+  Tuesday:['S.T.A. INF','Storia','Chimica','Lab. TTRG','Matematica','Inglese'],
+  Wednesday:['Grammatica','Matematica','Matematica','Sc. Mot. Sport','Sc. Mot. Sport'],
+  Thursday:['Diritto - Ec.','Lab. Fisica','Biologia','T.T.R.G.','Antologia','Antologia'],
+  Friday:['Grammatica','Lab. Chimica','Fisica','Biologia','Matematica'],
+  Saturday:['T.T.R.G.','S.T.A. INF','Inglese','Diritto - Ec.','Storia']
+};
+
+const times = {
+  Monday:['08:05','09:05','10:05','11:05','12:05'],
+  Tuesday:['08:05','09:05','10:05','11:05','12:05','13:05'],
+  Wednesday:['08:05','09:05','10:05','11:05','12:05'],
+  Thursday:['08:05','09:05','10:05','11:05','12:05','13:05'],
+  Friday:['08:05','09:05','10:05','11:05','12:05'],
+  Saturday:['08:05','09:05','10:05','11:05','12:05']
+};
+
+// Orari di uscita reali (ultima lezione finisce qui)
+const endOfDay = {
+  Monday: '13:05',
+  Tuesday: '14:05',
+  Wednesday: '13:05',
+  Thursday: '14:05',
+  Friday: '13:05',
+  Saturday: '13:05'
+};
+
+function updateSchedule(dayOverride = null) {
+  const now = new Date();
+  const weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  let day = dayOverride || weekdays[now.getDay()];
+  const oggiISO = now.toISOString().split('T')[0];
+
+  const giornoFestivo = "2025-09-23";
+  const festivi = [giornoFestivo]; 
+
+  // Avvertimenti
+  const warnings = [];
+  const oggi = new Date(oggiISO);
+  const festivo = new Date(giornoFestivo);
+  const diffGiorni = Math.floor((festivo - oggi)/(1000*60*60*24));
+  if(diffGiorni >0 && diffGiorni<=7){
+    warnings.push(`Il ${giornoFestivo.split("-").reverse().join("/")} non si va a scuola.`);
+  }
+  document.getElementById('warningsList').innerText = warnings.length ? warnings.join("\n") : "-";
+
+  let showDay = day;
+  let domenica = false;
+  if(day === 'Sunday' || festivi.includes(oggiISO)){
+    domenica = true;
+    document.getElementById('nowSubject').innerText = "Oggi Spongebob non lavora";
+    document.getElementById('nextSubject').innerText = '--';
+    document.getElementById('remainingSubjects').innerHTML = '';
+    document.getElementById('countdown').innerText = '';
+    // mostra comunque le materie del giorno dopo per remaining
+    const nextIndex = (weekdays.indexOf(day)+1) >6 ? 1 : (weekdays.indexOf(day)+1);
+    showDay = weekdays[nextIndex];
+  }
+
+  let showTimes = times[showDay];
+  let showSchedule = schedule[showDay];
+
+  const ora = now.getHours();
+  const min = now.getMinutes();
+
+  if(!dayOverride && !domenica){
+    if(ora < 8 || (ora === 8 && min < 5)) {
+      showDay = day;
+    } else if(ora > 14 || (ora === 14 && min > 5)) {
+      let nextIndex = (weekdays.indexOf(day)+1);
+      if(nextIndex>6) nextIndex=1;
+      showDay = weekdays[nextIndex];
+    }
+    showTimes = times[showDay];
+    showSchedule = schedule[showDay];
+  }
+
+  let nowSub = domenica ? 'Oggi Spongebob non lavora' : 'nessuna materia ora';
+  let nextSub = '--';
+  let remaining = showSchedule.slice();
+  let endTime = null;
+  let inClass = false;
+
+  if(!dayOverride && !domenica && ora >=8){
+    for(let i=0;i<showSchedule.length;i++){
+      const [h,m] = showTimes[i].split(':');
+      const classStart = new Date();
+      classStart.setHours(h,m,0,0);
+
+      const classEnd = new Date();
+      if(i === showSchedule.length-1){
+        const [eh, em] = endOfDay[showDay].split(':');
+        classEnd.setHours(eh, em, 0, 0);
+      } else {
+        const [nh,nm] = showTimes[i+1].split(':');
+        classEnd.setHours(nh,nm,0,0);
       }
 
-      .card {
-        padding: 18px;
-        border-radius: 14px;
-        margin: 10px 0;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-        background: #1e1e1e;
+      if(now >= classStart && now < classEnd){
+        nowSub = showSchedule[i];
+        endTime = classEnd;
+        inClass = true;
+        nextSub = i+1<showSchedule.length ? showSchedule[i+1] : '--';
+        remaining = showSchedule.slice(i+1);
+        break;
       }
+    }
+  }
 
-      .title {
-        font-size: 16px;
-        font-weight: 700;
-        margin-bottom: 5px;
-      }
+  document.getElementById('nowSubject').innerText = nowSub;
+  document.getElementById('nextSubject').innerText = nextSub;
 
-      .subject {
-        font-size: 20px;
-        font-weight: 700;
-        word-wrap: break-word;
-      }
+  const remList = document.getElementById('remainingSubjects');
+  remList.innerHTML = '';
+  remaining.forEach(sub=>{
+    const li = document.createElement('li');
+    li.innerText = sub;
+    remList.appendChild(li);
+  });
 
-      .now {
-        background: #1e88e5;
-        color: white;
-      }
+  const cd = document.getElementById('countdown');
+  if(endTime && inClass){
+    const diffSec = Math.floor((endTime-now)/1000);
+    if(diffSec>0){
+      const min = Math.floor(diffSec/60);
+      const sec = diffSec%60;
+      cd.innerText = `Finisce tra ${min}m ${sec}s`;
+    } else cd.innerText = '';
+  } else cd.innerText = '';
+}
 
-      .next {
-        background: #43a047;
-        color: white;
-      }
+document.getElementById('daySelect').addEventListener('change', e=>{
+  updateSchedule(e.target.value || null);
+});
 
-      .remaining {
-        background: #ff9800;
-        color: white;
-      }
+function updateDateTime(){
+  const now = new Date();
+  const options = {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit'};
+  document.getElementById('dateTime').innerText = now.toLocaleDateString('it-IT', options) + ' ' + now.toLocaleTimeString('it-IT');
+}
 
-      .warning {
-        background: #d32f2f;
-        color: white;
-      }
+setInterval(()=>{
+  if(!document.getElementById('daySelect').value) updateSchedule();
+  updateDateTime();
+},1000);
 
-      ul {
-        padding-left: 20px;
-        margin: 0;
-      }
+updateSchedule();
+updateDateTime();
+</script>
 
-      li {
-        margin-bottom: 5px;
-        font-size: 16px;
-      }
-
-      select {
-        width: 100%;
-        padding: 10px;
-        border-radius: 10px;
-        border: none;
-        background: #333;
-        color: #eee;
-        margin-bottom: 15px;
-        font-size: 16px;
-      }
-
-      #footer {
-        margin-top: auto;
-        text-align: center;
-        padding: 15px 0;
-        font-size: 16px;
-        color: #aaa;
-        background: #1a1a1a;
-        border-top: 1px solid #333;
-      }
-
-      @media (max-width: 480px) {
-        .subject {
-          font-size: 18px;
-        }
-
-        li {
-          font-size: 14px;
-        }
-
-        .title {
-          font-size: 14px;
-        }
-
-        #footer {
-          font-size: 14px;
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <select id="daySelect">
-      <option value="">Oggi</option>
-      <option value="Monday">Lunedì</option>
-      <option value="Tuesday">Martedì</option>
-      <option value="Wednesday">Mercoledì</option>
-      <option value="Thursday">Giovedì</option>
-      <option value="Friday">Venerdì</option>
-      <option value="Saturday">Sabato</option>
-    </select>
-
-    <div class="card now">
-      <div class="title">Materia attuale:</div>
-      <div class="subject" id="nowSubject">-</div>
-      <div id="countdown"></div>
-    </div>
-
-    <div class="card next">
-      <div class="title">Prossima materia:</div>
-      <div class="subject" id="nextSubject">-</div>
-    </div>
-
-    <div class="card remaining">
-      <div class="title">Materie:</div>
-      <ul id="remainingSubjects"></ul>
-    </div>
-
-    <div class="card warning">
-      <div class="title">Avvertimenti:</div>
-      <div id="warningsList">-</div>
-    </div>
-
-    <div id="footer">
-      <span id="dateTime"></span>
-    </div>
-
-    <script>
-      const schedule = {
-        Monday: ["S.T.A. INF", "Religione", "Inglese", "Chimica", "Fisica"],
-        Tuesday: [
-          "S.T.A. INF",
-          "Storia",
-          "Chimica",
-          "Lab. TTRG",
-          "Matematica",
-          "Inglese",
-        ],
-        Wednesday: [
-          "Grammatica",
-          "Matematica",
-          "Matematica",
-          "Sc. Mot. Sport",
-          "Sc. Mot. Sport",
-        ],
-        Thursday: [
-          "Diritto - Ec.",
-          "Lab. Fisica",
-          "Biologia",
-          "T.T.R.G.",
-          "Antologia",
-          "Antologia",
-        ],
-        Friday: [
-          "Grammatica",
-          "Lab. Chimica",
-          "Fisica",
-          "Biologia",
-          "Matematica",
-        ],
-        Saturday: [
-          "T.T.R.G.",
-          "S.T.A. INF",
-          "Inglese",
-          "Diritto - Ec.",
-          "Storia",
-        ],
-      };
-
-      const times = {
-        Monday: ["08:05", "09:05", "10:05", "11:05", "12:05"],
-        Tuesday: ["08:05", "09:05", "10:05", "11:05", "12:05", "13:05"],
-        Wednesday: ["08:05", "09:05", "10:05", "11:05", "12:05"],
-        Thursday: ["08:05", "09:05", "10:05", "11:05", "12:05", "13:05"],
-        Friday: ["08:05", "09:05", "10:05", "11:05", "12:05"],
-        Saturday: ["08:05", "09:05", "10:05", "11:05", "12:05"],
-      };
-
-      // Orari di uscita reali (ultima lezione finisce qui)
-      const endOfDay = {
-        Monday: "13:05",
-        Tuesday: "14:05",
-        Wednesday: "13:05",
-        Thursday: "14:05",
-        Friday: "13:05",
-        Saturday: "13:05",
-      };
-
-      function updateSchedule(dayOverride = null) {
-        const now = new Date();
-        const weekdays = [
-          "Sunday",
-          "Monday",
-          "Tuesday",
-          "Wednesday",
-          "Thursday",
-          "Friday",
-          "Saturday",
-        ];
-        let day = dayOverride || weekdays[now.getDay()];
-        const oggiISO = now.toISOString().split("T")[0];
-        const giornoFestivo = "2025-09-23";
-        const festivi = [giornoFestivo];
-
-        // Avvertimenti
-        const warnings = [];
-        const oggi = new Date(oggiISO);
-        const festivo = new Date(giornoFestivo);
-        const diffGiorni = Math.floor((festivo - oggi) / (1000 * 60 * 60 * 24));
-        if (diffGiorni > 0 && diffGiorni <= 7) {
-          warnings.push(
-            Il ${giornoFestivo.split("-").reverse().join("/")} non si va a scuola.
-          );
-        }
-        document.getElementById("warningsList").innerText = warnings.length
-          ? warnings.join("\n")
-          : "-";
-
-        let showDay = day;
-        let domenica = false;
-
-        if (day === "Sunday" || festivi.includes(oggiISO)) {
-          domenica = true;
-          document.getElementById("nowSubject").innerText =
-            "Oggi Spongebob non lavora";
-          document.getElementById("nextSubject").innerText = "--";
-          document.getElementById("remainingSubjects").innerHTML = "";
-          document.getElementById("countdown").innerText = "";
-
-          // mostra comunque le materie del giorno dopo per remaining
-          const nextIndex =
-            weekdays.indexOf(day) + 1 > 6 ? 1 : weekdays.indexOf(day) + 1;
-          showDay = weekdays[nextIndex];
-        }
-
-        let showTimes = times[showDay];
-        let showSchedule = schedule[showDay];
-        const ora = now.getHours();
-        const min = now.getMinutes();
-
-        if (!dayOverride && !domenica) {
-          if (ora < 8 || (ora === 8 && min < 5)) {
-            showDay = day;
-          } else if (ora > 14 || (ora === 14 && min > 5)) {
-            let nextIndex = weekdays.indexOf(day) + 1;
-            if (nextIndex > 6) nextIndex = 1;
-            showDay = weekdays[nextIndex];
-          }
-          showTimes = times[showDay];
-          showSchedule = schedule[showDay];
-        }
-
-        let nowSub = domenica ? "Oggi Spongebob non lavora" : "nessuna materia ora";
-        let nextSub = "--";
-        let remaining = showSchedule.slice();
-        let endTime = null;
-        let inClass = false;
-
-        if (!dayOverride && !domenica && ora >= 8) {
-          for (let i = 0; i < showSchedule.length; i++) {
-            const [h, m] = showTimes[i].split(":");
-            const classStart = new Date();
-            classStart.setHours(h, m, 0, 0);
-            const classEnd = new Date();
-            if (i === showSchedule.length - 1) {
-              const [eh, em] = endOfDay[showDay].split(":");
-              classEnd.setHours(eh, em, 0, 0);
-            } else {
-              const [nh, nm] = showTimes[i + 1].split(":");
-              classEnd.setHours(nh, nm, 0, 0);
-            }
-            if (now >= classStart && now < classEnd) {
-              nowSub = showSchedule[i];
-              endTime = classEnd;
-              inClass = true;
-              nextSub = i + 1 < showSchedule.length ? showSchedule[i + 1] : "--";
-              remaining = showSchedule.slice(i + 1);
-              break;
-            }
-          }
-        }
-
-        document.getElementById("nowSubject").innerText = nowSub;
-        document.getElementById("nextSubject").innerText = nextSub;
-        const remList = document.getElementById("remainingSubjects");
-        remList.innerHTML = "";
-        remaining.forEach((sub) => {
-          const li = document.createElement("li");
-          li.innerText = sub;
-          remList.appendChild(li);
-        });
-
-        const cd = document.getElementById("countdown");
-        if (endTime && inClass) {
-          const diffSec = Math.floor((endTime - now) / 1000);
-          if (diffSec > 0) {
-            const min = Math.floor(diffSec / 60);
-            const sec = diffSec % 60;
-            cd.innerText = Finisce tra ${min}m ${sec}s;
-          } else cd.innerText = "";
-        } else cd.innerText = "";
-      }
-
-      document.getElementById("daySelect").addEventListener("change", (e) => {
-        updateSchedule(e.target.value || null);
-      });
-
-      function updateDateTime() {
-        const now = new Date();
-        const options = {
-          weekday: "long",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        };
-        document.getElementById("dateTime").innerText =
-          now.toLocaleDateString("it-IT", options) +
-          " " +
-          now.toLocaleTimeString("it-IT");
-      }
-
-      setInterval(() => {
-        if (!document.getElementById("daySelect").value) updateSchedule();
-        updateDateTime();
-      }, 1000);
-
-      updateSchedule();
-      updateDateTime();
-    </script>
-  </body>
+</body>
 </html>
