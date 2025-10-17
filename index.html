@@ -126,10 +126,7 @@ function updateSchedule(dayOverride = null) {
   const festivi = [giornoFestivo]; 
 
   // Avvertimenti
-  const warnings = [
-  '17/10/2025: Verifica di Inglese'
-  '19/10/2025: Verifica di Fisica'
-  ];
+  const warnings = [];
   const oggi = new Date(oggiISO);
   const festivo = new Date(giornoFestivo);
   const diffGiorni = Math.floor((festivo - oggi)/(1000*60*60*24));
