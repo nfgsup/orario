@@ -148,7 +148,7 @@ async function addWarning(){
   const text=document.getElementById('warningText').value.trim();
   if(!date||!text){alert('Inserisci data e descrizione'); return;}
   try{
-    const res=await fetch('https://orario-psi.vercel.app/add-warning',{
+    const res=await fetch('https://orario-psi.vercel.app/api/add-warning',{
       method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({date,text})
     });
     if(res.ok){ alert('Avvertimento aggiunto!'); document.getElementById('warningDate').value=''; document.getElementById('warningText').value=''; updateSchedule(); }
@@ -165,3 +165,4 @@ updateSchedule(); updateDateTime();
 
 </body>
 </html>
+
