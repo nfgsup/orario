@@ -1,15 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 
-const warningsFile = path.resolve('./warnings.json');
+const warningsFile = path.join(process.cwd(), 'warnings.json');
 
 export default async function handler(req, res) {
-  // --- CORS headers ---
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Origin', '*'); // fix CORS veloce
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'OPTIONS') {
+  if(req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
@@ -18,7 +17,11 @@ export default async function handler(req, res) {
       const { date, text } = req.body;
       if (!date || !text) return res.status(400).json({ error: 'Missing date or text' });
 
-      const data = JSON.parse(fs.readFileSync(warningsFile));
+      let data = [];
+      if(fs.existsSync(warningsFile)) {
+        data = JSON.parse(fs.readFileSync(warningsFile, 'utf-8'));
+      }
+
       data.push({ date, text });
       fs.writeFileSync(warningsFile, JSON.stringify(data, null, 2));
 
