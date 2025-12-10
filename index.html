@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#7c4dff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Orario materie di nfgsup</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="popup-overlay" id="welcomePopup">
+    <div class="popup-content">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🚀</div>
+        <h2 style="margin: 0 0 10px 0; color: white;">V2 WE UPPP</h2>
+        <p style="color: #bbb; margin: 0; line-height: 1.5;">yooo, revamp totale del orario.<br>Nuova grafica, timeline e features.</p>
+        <button class="popup-btn" onclick="closePopup()">LET'S GOOO</button>
+    </div>
+</div>
+
+<header>
+    <div class="header-top">
+        <div class="app-title"><i class="fas fa-graduation-cap"></i> Orario materie di nfgsup</div>
+        <select id="daySelect">
+            <option value="">Auto</option>
+            <option value="Monday">Lunedì</option>
+            <option value="Tuesday">Martedì</option>
+            <option value="Wednesday">Mercoledì</option>
+            <option value="Thursday">Giovedì</option>
+            <option value="Friday">Venerdì</option>
+            <option value="Saturday">Sabato</option>
+        </select>
+    </div>
+    <div class="day-progress-container">
+        <div class="day-progress-bar" id="dayProgressBar"></div>
+    </div>
+</header>
+
+<div class="container">
+    
+    <div id="warningsArea"></div>
+
+    <div class="card hero-card" id="heroCard">
+        <div class="status-badge" id="schoolStatus">Caricamento...</div>
+        
+        <div class="current-subject-icon" id="heroIcon">
+            <i class="fas fa-school"></i>
+        </div>
+        
+        <div class="current-subject-name" id="heroSubject">--</div>
+        <div class="current-time-range" id="heroTime">--</div>
+
+        <div id="activeClassUI">
+            <div class="countdown-wrapper">
+                <div class="time-big" id="countdownBig">00:00</div>
+                <div class="time-label">alla fine dell'ora</div>
+            </div>
+            <div class="progress-bar-linear">
+                <div class="progress-fill" id="lessonProgressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card next-card" id="nextSubjectCard">
+        <div class="next-icon"><i class="fas fa-forward"></i></div>
+        <div class="next-info">
+            <div class="next-label">Prossima Materia</div>
+            <h3 id="nextSubjectText">--</h3>
+        </div>
+    </div>
+
+    <div class="timeline-container">
+        <div class="timeline-header" id="timelineTitle">Programma di Oggi</div>
+        <div id="timelineList">
+            </div>
+    </div>
+
+    <!-- Countdown Vacanze -->
+    <div class="card vacation-card" id="vacationCard">
+        <div class="vacation-icon">🎄</div>
+        <div class="vacation-info">
+            <div class="vacation-label">Vacanze di Natale tra</div>
+            <div class="vacation-days" id="vacationDays">-- giorni</div>
+        </div>
+    </div>
+
+    <!-- Statistiche -->
+    <div class="card stats-card">
+        <div class="stats-header">
+            <i class="fas fa-chart-pie"></i> Statistiche Oggi
+        </div>
+        <div class="stats-grid" id="statsGrid">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+</div>
+
+<!-- Share FAB -->
+<button class="share-fab" id="shareFab" onclick="shareOnWhatsApp()">
+    <i class="fab fa-whatsapp"></i>
+</button>
+
+<div class="footer-bar">
+    <div id="liveClock">--:--:--</div>
+    <div style="margin-top:5px; opacity: 0.6;">fatto da coco perche si</div>
+</div>
+
+<!-- Admin Button -->
+<button class="admin-fab" id="adminFab" onclick="toggleAdminPanel()">
+    <i class="fas fa-plus"></i>
+</button>
+
+<!-- Admin Panel -->
+<div class="admin-overlay" id="adminOverlay">
+    <div class="admin-panel">
+        <div class="admin-header">
+            <h3><i class="fas fa-cog"></i> Pannello Admin</h3>
+            <button class="admin-close" onclick="toggleAdminPanel()">&times;</button>
+        </div>
+        
+        <div id="adminLogin">
+            <p style="color: var(--text-muted); margin-bottom: 15px;">Inserisci la password admin</p>
+            <input type="password" id="adminPassword" placeholder="Password..." class="admin-input">
+            <button class="admin-btn" onclick="checkAdminPassword()">Accedi</button>
+        </div>
+        
+        <div id="adminContent" style="display: none;">
+            <!-- Tab Navigation -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" onclick="switchAdminTab('avvisi')"><i class="fas fa-megaphone"></i> Avvisi</button>
+                <button class="admin-tab" onclick="switchAdminTab('compiti')"><i class="fas fa-clipboard-list"></i> Compiti</button>
+            </div>
+            
+            <!-- Avvisi Tab -->
+            <div id="avvisiTab" class="admin-tab-content active">
+                <div class="admin-section">
+                    <label>Messaggio</label>
+                    <input type="text" id="warningMessage" placeholder="Es: Scuola chiusa per neve!" class="admin-input">
+                </div>
+                <div class="admin-section">
+                    <label>Data (opzionale)</label>
+                    <input type="date" id="warningDate" class="admin-input">
+                </div>
+                <div class="admin-section">
+                    <label>Tipo</label>
+                    <select id="warningType" class="admin-input">
+                        <option value="warning">⚠️ Avviso</option>
+                        <option value="holiday">🎄 Festivo</option>
+                        <option value="info">ℹ️ Info</option>
+                    </select>
+                </div>
+                <button class="admin-btn success" onclick="addWarning()"><i class="fas fa-paper-plane"></i> Pubblica Avviso</button>
+                
+                <div class="admin-divider"></div>
+                <h4 style="margin-bottom: 10px;">Avvisi Attivi</h4>
+                <div id="activeWarningsList"></div>
+            </div>
+            
+            <!-- Compiti Tab -->
+            <div id="compitiTab" class="admin-tab-content">
+                <div class="admin-section">
+                    <label>Materia</label>
+                    <select id="noteSubject" class="admin-input">
+                        <option value="Matematica">Matematica</option>
+                        <option value="Italiano">Italiano</option>
+                        <option value="Inglese">Inglese</option>
+                        <option value="Storia">Storia</option>
+                        <option value="Fisica">Fisica</option>
+                        <option value="Chimica">Chimica</option>
+                        <option value="Biologia">Biologia</option>
+                        <option value="Informatica">Informatica</option>
+                        <option value="Altro">Altro</option>
+                    </select>
+                </div>
+                <div class="admin-section">
+                    <label>Descrizione</label>
+                    <input type="text" id="noteText" placeholder="Es: Esercizi pag. 45" class="admin-input">
+                </div>
+                <div class="admin-section">
+                    <label>Scadenza</label>
+                    <input type="date" id="noteDate" class="admin-input">
+                </div>
+                <button class="admin-btn success" onclick="addNote()"><i class="fas fa-save"></i> Salva Compito</button>
+                
+                <div class="admin-divider"></div>
+                <h4 style="margin-bottom: 10px;">Compiti Salvati</h4>
+                <div id="notesList">
+                    <p class="notes-empty">Nessun compito salvato</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Theme Toggle -->
+<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+    <i class="fas fa-sun"></i>
+</button>
+
+<!-- Audio per cambio ora -->
+<audio id="bellSound" preload="auto">
+    <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+</audio>
+
+<script src="script.js"></script>
+</body>
+</html>
