@@ -656,6 +656,45 @@ function renderNotes() {
             </div>
         `;
     }).join('');
+    
+    // Aggiorna anche la lista pubblica
+    renderPublicNotes(validNotes);
+}
+
+// Lista pubblica compiti (senza controlli admin)
+function renderPublicNotes(validNotes) {
+    const publicList = document.getElementById('publicNotesList');
+    if (!publicList) return;
+    
+    // Mostra solo compiti non completati
+    const pending = validNotes.filter(n => !n.completed);
+    
+    if (pending.length === 0) {
+        publicList.innerHTML = '<p class="notes-empty">Nessun compito da fare 🎉</p>';
+        return;
+    }
+    
+    // Ordina per data
+    const sorted = [...pending].sort((a, b) => {
+        return new Date(a.date || '9999') - new Date(b.date || '9999');
+    });
+    
+    publicList.innerHTML = sorted.map(n => {
+        const dateStr = n.date ? (() => {
+            const d = new Date(n.date);
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}`;
+        })() : '';
+        
+        return `
+            <div class="note-item-public">
+                <div class="note-content">
+                    <div class="note-subject">${n.subject}</div>
+                    <div class="note-text">${n.text}</div>
+                    ${dateStr ? `<div class="note-date">📅 ${dateStr}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // --- WHATSAPP SHARE ---

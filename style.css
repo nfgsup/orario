@@ -710,6 +710,18 @@ header {
     opacity: 1;
 }
 
+/* Public Notes List */
+.note-item-public {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--primary);
+}
+
 /* Share FAB */
 .share-fab {
     position: fixed;
