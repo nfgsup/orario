@@ -1,5 +1,5 @@
 // Service Worker per PWA
-const CACHE_NAME = 'orario-v3'; // Cambia versione per forzare update
+const CACHE_NAME = 'orario-v4'; // Cambia versione per forzare update
 const urlsToCache = [
   '/orario/',
   '/orario/index.html',
