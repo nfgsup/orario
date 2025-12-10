@@ -1,5 +1,5 @@
 // Service Worker per PWA
-const CACHE_NAME = 'orario-v2';
+const CACHE_NAME = 'orario-v3'; // Cambia versione per forzare update
 const urlsToCache = [
   '/orario/',
   '/orario/index.html',
@@ -9,26 +9,37 @@ const urlsToCache = [
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-// Install
+// Install - skipWaiting forza l'attivazione immediata
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
   );
 });
 
-// Fetch
+// Fetch - Network first, poi cache (così prende sempre l'ultimo)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        // Return cache or fetch from network
-        return response || fetch(event.request);
+        // Salva in cache la nuova versione
+        if (response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return response;
+      })
+      .catch(() => {
+        // Se offline, usa la cache
+        return caches.match(event.request);
       })
   );
 });
 
-// Activate - clean old caches
+// Activate - pulisce vecchie cache e prende controllo subito
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -39,6 +50,8 @@ self.addEventListener('activate', event => {
           }
         })
       );
+    }).then(() => {
+      return self.clients.claim(); // Prende controllo immediato
     })
   );
 });
