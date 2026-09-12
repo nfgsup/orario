@@ -2035,3 +2035,116 @@ ol.timeline {
 .search-wrap .search-icon .ic { width: 1rem; height: 1rem; }
 .install-btn .ic, #installBtn .ic { width: 1rem; height: 1rem; }
 .github-link .ic { width: .875rem; height: .875rem; }
+
+/* ============================================================
+   WEEK GRID FIX
+   ============================================================ */
+.week-grid-wrap {
+  overflow-x: auto;
+  padding: 0.75rem;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: 55px repeat(6, minmax(110px, 1fr));
+  grid-template-rows: auto repeat(6, minmax(60px, auto));
+  gap: 0.35rem;
+  min-width: 700px;
+}
+
+.wg-corner {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.wg-day {
+  grid-row: 1;
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+  background: var(--muted-bg);
+  border-radius: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+}
+
+.wg-day.today {
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  border: 1px solid var(--primary);
+}
+
+.wg-day-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.wg-day-sub {
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.wg-today {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+}
+
+.wg-time {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.wg-cell {
+  background: color-mix(in srgb, var(--muted-bg) 40%, transparent);
+  border-radius: 0.6rem;
+  border: 1px dashed var(--border);
+}
+
+.wg-lesson {
+  border-radius: 0.6rem;
+  padding: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--cbd, var(--border));
+  background: var(--cbg, var(--card));
+  font-size: 0.8rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.wg-lesson.active {
+  box-shadow: 0 0 0 2px var(--primary);
+}
+
+.wg-lname {
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.wg-lroom {
+  font-size: 10px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.wg-ldbl {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--border);
+  padding: 1px 4px;
+  border-radius: 0.3rem;
+}
