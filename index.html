@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover" />
+  <title>Orario 3Ai · 26/27</title>
+  <meta name="description" content="Orario scolastico della classe 3Ai per la stagione 2026/2027 — PWA installabile, offline-ready." />
+  <meta name="theme-color" content="#7c4dff" media="(prefers-color-scheme: light)" id="meta-theme-light" />
+  <meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)" id="meta-theme-dark" />
+
+  <!-- PWA / iOS -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Orario 3Ai" />
+  <meta name="application-name" content="Orario 3Ai" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ============ HEADER ============ -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-row">
+        <div class="brand">
+          <div class="logo" id="logoBadge" aria-hidden="true"></div>
+          <div class="brand-text">
+            <h1>Orario 3Ai</h1>
+            <p><span class="dot"></span> Stagione 2026 / 2027</p>
+          </div>
+        </div>
+        <div class="actions">
+          <div class="clock-pill" id="clockPill"><span id="headerIconClock"></span><span id="headerClock">--:--</span></div>
+          <button class="icon-btn" id="shareBtn" aria-label="Condividi" title="Condividi"></button>
+          <button class="icon-btn" id="settingsBtn" aria-label="Impostazioni" title="Impostazioni"></button>
+          <button class="icon-btn" id="themeBtn" aria-label="Cambia tema" title="Tema"></button>
+        </div>
+      </div>
+
+      <div class="day-tabs" id="dayTabs" role="tablist"></div>
+
+      <div class="day-progress"><div class="day-progress-bar" id="dayProgressBar"></div></div>
+    </div>
+  </header>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main" id="main">
+
+    <!-- ===== TODAY VIEW ===== -->
+    <section class="view" id="view-today" data-view="today">
+      <div class="card hero" id="hero"></div>
+      <section class="card timeline-card" id="timelineCard"></section>
+      <section class="stats-grid" id="statsGrid"></section>
+      <section class="card vacation" id="vacationCard"></section>
+      <section class="card year-progress" id="yearCard"></section>
+      <section class="card notes" id="notesCard"></section>
+    </section>
+
+    <!-- ===== WEEK VIEW ===== -->
+    <section class="view" id="view-week" data-view="week" hidden>
+      <div class="view-title"><span class="vt-icon" id="weekTitleIcon"></span><h2>Settimana</h2></div>
+      <section class="card week-grid-wrap"><div class="week-grid" id="weekGrid"></div></section>
+      <section class="card year-progress" id="yearCard2"></section>
+    </section>
+
+    <!-- ===== TEACHERS VIEW ===== -->
+    <section class="view" id="view-teachers" data-view="teachers" hidden>
+      <div class="view-title"><span class="vt-icon" id="teachersTitleIcon"></span><h2>Docenti</h2></div>
+      <section class="card teachers">
+        <div class="search-wrap"><span class="search-icon" id="searchIcon"></span><input type="search" id="teacherSearch" placeholder="Cerca docente o materia…" /></div>
+        <div class="teachers-list fancy-scroll" id="teachersList"></div>
+      </section>
+    </section>
+
+  </main>
+
+  <!-- ============ FOOTER (desktop) ============ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-clock"><span id="footerIconClock"></span><span id="footerClock">--:--:--</span></span>
+      <span class="footer-brand"><span class="dot"></span> 3Ai · 26/27 · PWA</span>
+    </div>
+  </footer>
+
+  <!-- ============ BOTTOM NAV (mobile) ============ -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-btn" data-view="today" aria-current="page">
+      <span class="nav-icon" id="navIconToday"></span>
+      <span class="nav-label">Oggi</span>
+    </button>
+    <button class="nav-btn" data-view="week">
+      <span class="nav-icon" id="navIconWeek"></span>
+      <span class="nav-label">Settimana</span>
+    </button>
+    <button class="nav-btn" data-view="teachers">
+      <span class="nav-icon" id="navIconTeachers"></span>
+      <span class="nav-label">Docenti</span>
+    </button>
+  </nav>
+
+  <!-- ============ SETTINGS DRAWER ============ -->
+  <div class="drawer-overlay" id="drawerOverlay">
+    <aside class="drawer" id="drawer" role="dialog" aria-label="Impostazioni" aria-modal="true">
+      <div class="drawer-header">
+        <h3><span id="drawerIcon"></span> Impostazioni</h3>
+        <button class="icon-btn" id="drawerClose" aria-label="Chiudi"></button>
+      </div>
+      <div class="drawer-body">
+        <div class="setting-row">
+          <div class="setting-icon" id="setIconBell"></div>
+          <div class="setting-text"><div class="setting-title">Notifiche browser</div><div class="setting-desc">Avvisi all'inizio di ogni ora e 5 min prima della fine</div></div>
+          <label class="switch"><input type="checkbox" id="setNotifications" /><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon" id="setIconVolume"></div>
+          <div class="setting-text"><div class="setting-title">Suono campanella</div><div class="setting-desc">Rintocco al cambio materia (Web Audio)</div></div>
+          <label class="switch"><input type="checkbox" id="setSound" /><span class="slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-icon" id="setIconClock"></div>
+          <div class="setting-text"><div class="setting-title">Formato 24 ore</div><div class="setting-desc">Disattiva per 12h (AM/PM)</div></div>
+          <label class="switch"><input type="checkbox" id="set24h" /><span class="slider"></span></label>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="setting-block">
+          <div class="setting-title mb-2">Tema</div>
+          <div class="theme-row">
+            <button class="theme-btn" data-theme="light">Chiaro</button>
+            <button class="theme-btn" data-theme="dark">Scuro</button>
+            <button class="theme-btn" data-theme="system">Sistema</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <button class="btn btn-block" id="installBtn" hidden><span id="installIcon"></span> Installa app</button>
+        <a class="github-link" href="https://github.com" target="_blank" rel="noreferrer"><span id="githubIcon"></span> Codice su GitHub</a>
+        <p class="drawer-foot">Orario 3Ai · 26/27 · PWA</p>
+      </div>
+    </aside>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
