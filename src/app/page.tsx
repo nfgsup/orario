@@ -406,7 +406,7 @@ function Hero({
   mounted: boolean;
 }) {
   if (!day) {
-    return <HeroShell>{/* nothing */}</HeroShell>;
+    return <HeroShell>{null}</HeroShell>;
   }
 
   const totalH = dayHours(day);
