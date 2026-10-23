@@ -1,6 +1,6 @@
 // Service Worker — Orario 3Ai · 26/27 (static vanilla version)
 // App-shell precaching + stale-while-revalidate runtime.
-const VERSION = "v3ai-2627-v1";
+const VERSION = "v3ai-2627-v2";
 const APP_SHELL = VERSION + "-shell";
 const RUNTIME = VERSION + "-runtime";
 
@@ -8,6 +8,7 @@ const PRECACHE = [
   "./",
   "./index.html",
   "./style.css",
+  "./config.js",
   "./script.js",
   "./manifest.json",
   "./icon.svg",
@@ -48,6 +49,24 @@ self.addEventListener("fetch", (e) => {
         } catch {
           const c = await caches.open(APP_SHELL);
           return (await c.match("./index.html")) || (await c.match(req));
+        }
+      })()
+    );
+    return;
+  }
+
+  // Dati sempre aggiornati: network-first con fallback alla cache.
+  if (url.pathname.endsWith("/data/homework.json") || url.pathname.endsWith("/config.js")) {
+    e.respondWith(
+      (async () => {
+        try {
+          const fresh = await fetch(req);
+          const c = await caches.open(RUNTIME);
+          c.put(req, fresh.clone()).catch(() => {});
+          return fresh;
+        } catch {
+          const c = await caches.open(RUNTIME);
+          return (await c.match(req)) || Response.error();
         }
       })()
     );

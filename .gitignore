@@ -1,0 +1,22 @@
+# Segreti
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Node / Cloudflare
+node_modules/
+.wrangler/
+
+# Build Pages
+_site/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log

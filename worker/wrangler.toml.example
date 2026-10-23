@@ -1,0 +1,16 @@
+name = "orario-3ai-trigger"
+main = "index.js"
+compatibility_date = "2026-01-01"
+
+[vars]
+GITHUB_OWNER = "TUO-UTENTE"
+GITHUB_REPO = "orariocompiti"
+WORKFLOW_FILE = "bot.yml"
+GITHUB_REF = "main"
+ALLOWED_ORIGINS = "https://TUO-UTENTE.github.io"
+
+# Facoltativo: rate limit persistente (1 richiesta / 5 min per IP).
+# Crea prima il namespace con: wrangler kv namespace create RATE_LIMIT
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

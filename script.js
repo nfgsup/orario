@@ -36,6 +36,8 @@
     grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
     users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
   };
   function svg(name, cls) {
     return I[name] ? I[name].replace("<svg", '<svg class="' + (cls || "ic") + '"') : "";
@@ -97,9 +99,9 @@
       entries: [
         { subject: S("MATEMATICA","MATEMATICA","MAT","D'Addona R.A.","P2-03"), hours: 1 },
         { subject: S("RELIGIONE","RELIGIONE","REL","Ritrovato M.G.","P2-03"), hours: 1 },
-        { subject: S("SC_MOT_SPORT","SC. MOT. SPORT","MOT","Gentile A.","Palestra 1"), hours: 1 },
+        { subject: S("SC_MOT_SPORT","SC. MOT. SPORT","MOT","Gentile A.","Palestra 1"), hours: 2 },
         { subject: S("STORIA","STORIA","STO","Ferosi G.","P2-01"), hours: 1 },
-        { subject: S("SISTEMI_RETI","SISTEMI E RETI","S&R","Chiumento G.","P2-01"), hours: 2 },
+        { subject: S("SISTEMI_RETI","SISTEMI E RETI","S&R","Chiumento G.","P2-01"), hours: 1 },
       ],
     },
     Friday: {
@@ -114,8 +116,8 @@
     Saturday: {
       label: "Sabato", short: "SAB",
       entries: [
-        { subject: S("ITALIANO","ITALIANO","ITA","Ferosi G.","P2-01"), hours: 1 },
-        { subject: S("INFORMATICA","INFORMATICA","INF","Tamburrano P.","P2-01"), hours: 2 },
+        { subject: S("ITALIANO","ITALIANO","ITA","Ferosi G.","P2-01"), hours: 2 },
+        { subject: S("INFORMATICA","INFORMATICA","INF","Tamburrano P.","P2-01"), hours: 1 },
         { subject: S("INGLESE","INGLESE","ING","Nardella T.","P2-01"), hours: 1 },
         { subject: S("TLC","TLC","TLC","Pompilio G.","P2-01"), hours: 1 },
       ],
@@ -170,7 +172,50 @@
   function fmtClockFull(d, h24) { return d.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:!h24}); }
   function esc(s) { return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
+  // ============ DAY ROLLOVER ============
+  // Dopo le 14:00 (e nei giorni non scolastici) la vista predefinita passa
+  // automaticamente al prossimo giorno di scuola.
+  const ROLLOVER_HOUR = 14;
+  function actualDayKey(now) { return jsDayToKey(now.getDay()); }
+  function isHolidayDate(d) {
+    const s = iso(d);
+    return HOLIDAYS.some(h => s >= h.start && s <= h.end);
+  }
+  function nextSchoolDayKey(now) {
+    const d = new Date(now);
+    for (let i = 0; i < 21; i++) {
+      d.setDate(d.getDate() + 1);
+      const k = jsDayToKey(d.getDay());
+      if (k && SCHEDULE[k].entries.length && !isHolidayDate(d)) return k;
+    }
+    return "Monday";
+  }
+  function autoDayKey(now) {
+    const actual = actualDayKey(now);
+    const mins = now.getHours() * 60 + now.getMinutes();
+    if (!actual || isHolidayDate(now)) return nextSchoolDayKey(now); // domenica / festivo
+    if (mins >= ROLLOVER_HOUR * 60) return nextSchoolDayKey(now);    // dopo le 14:00
+    return actual;
+  }
+  function displayDayKey() { return state.selectedDay || autoDayKey(state.now); }
+  function isDisplayingNextSchoolDay() {
+    return !state.selectedDay && displayDayKey() === nextSchoolDayKey(state.now);
+  }
+  function isTomorrowSchoolDay(now) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + 1);
+    const k = jsDayToKey(d.getDay());
+    return !!k && !isHolidayDate(d) && k === nextSchoolDayKey(now);
+  }
+
   // ============ STATE ============
+  const CFG = Object.assign({
+    homeworkUrl: "data/homework.json",
+    requestEndpoint: "",
+    requestCooldownMs: 120000,
+    refreshIntervalMs: 300000,
+  }, window.ORARIO_CONFIG || {});
+
   const state = {
     now: new Date(),
     selectedDay: null,
@@ -180,6 +225,8 @@
     activeKey: null,
     warned5: null,
     deferredPrompt: null,
+    lastAutoKey: null,
+    homework: { data: null, loading: false, requesting: false, lastFetch: 0, error: null, message: null, cooldownUntil: 0 },
   };
 
   function loadSettings() {
@@ -203,6 +250,7 @@
   const yearCard = $("yearCard");
   const yearCard2 = $("yearCard2");
   const notesCard = $("notesCard");
+  const homeworkCard = $("homeworkCard");
   const weekGrid = $("weekGrid");
   const teachersList = $("teachersList");
   const teacherSearch = $("teacherSearch");
@@ -267,17 +315,20 @@
 
   // ============ DAY TABS ============
   function renderDayTabs() {
-    const todayKey = jsDayToKey(state.now.getDay());
-    const sel = state.selectedDay;
+    const actual = actualDayKey(state.now);
+    const disp = displayDayKey();
     let html = "";
-    html += `<button class="day-pill ${sel===null?"active":""}" data-day="">
-      ${todayKey && sel!==null ? '<span class="today-dot"></span>' : ""}<span>Oggi</span><span class="sub">${todayKey ? SCHEDULE[todayKey].short : ""}</span></button>`;
+    // Scorciatoia "Oggi" quando la vista automatica mostra già un altro giorno.
+    if (actual && SCHEDULE[actual] && disp !== actual) {
+      html += `<button class="day-pill today-shortcut" data-day="${actual}">
+        <span class="today-dot"></span><span>Oggi</span><span class="sub">${SCHEDULE[actual].short}</span></button>`;
+    }
     DAY_ORDER.forEach(k => {
       const d = SCHEDULE[k];
-      const active = sel === k;
-      const isToday = todayKey === k && !active;
+      const active = disp === k;
+      const isToday = actual === k;
       const long = dayEndLabel(d) === "14:05";
-      html += `<button class="day-pill ${active?"active":""}" data-day="${k}">
+      html += `<button class="day-pill ${active?"active":""}" data-day="${k}" role="tab" aria-selected="${active}">
         ${isToday ? '<span class="today-dot"></span>' : ""}
         <span>${d.label}</span><span class="sub">${d.short}</span>
         ${long ? '<span class="chip-2pm">2pm</span>' : ""}
@@ -287,12 +338,65 @@
     dayTabs.querySelectorAll(".day-pill").forEach(b => {
       b.addEventListener("click", () => { state.selectedDay = b.dataset.day || null; renderDayTabs(); renderToday(); });
     });
+    // Porta in vista il giorno attivo (utile su mobile)
+    const activePill = dayTabs.querySelector(".day-pill.active");
+    if (activePill) {
+      const left = activePill.offsetLeft, right = left + activePill.offsetWidth;
+      if (left < dayTabs.scrollLeft || right > dayTabs.scrollLeft + dayTabs.clientWidth) {
+        dayTabs.scrollTo({ left: Math.max(0, left - 12), behavior: "smooth" });
+      }
+    }
+  }
+
+  // Scorrimento orizzontale dei giorni anche con mouse/rotella su desktop.
+  function enableDayTabsScrolling() {
+    if (!dayTabs) return;
+    dayTabs.addEventListener("wheel", (e) => {
+      if (dayTabs.scrollWidth <= dayTabs.clientWidth) return;
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        dayTabs.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+
+    let drag = null;
+    let suppressClick = false;
+    dayTabs.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      drag = { x: e.clientX, left: dayTabs.scrollLeft, moved: false, id: e.pointerId };
+    });
+    dayTabs.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x;
+      if (!drag.moved && Math.abs(dx) > 6) {
+        drag.moved = true;
+        dayTabs.classList.add("dragging");
+        try { dayTabs.setPointerCapture(drag.id); } catch {}
+      }
+      if (drag.moved) {
+        e.preventDefault();
+        dayTabs.scrollLeft = drag.left - dx;
+      }
+    });
+    const endDrag = () => {
+      if (!drag) return;
+      suppressClick = drag.moved;
+      drag = null;
+      dayTabs.classList.remove("dragging");
+      setTimeout(() => { suppressClick = false; }, 0);
+    };
+    dayTabs.addEventListener("pointerup", endDrag);
+    dayTabs.addEventListener("pointercancel", endDrag);
+    dayTabs.addEventListener("pointerleave", endDrag);
+    dayTabs.addEventListener("click", (e) => {
+      if (suppressClick) { e.preventDefault(); e.stopPropagation(); }
+    }, true);
   }
 
   // ============ HERO ============
   function renderHero() {
-    const todayKey = jsDayToKey(state.now.getDay());
-    const dispKey = state.selectedDay || todayKey;
+    const todayKey = actualDayKey(state.now);
+    const dispKey = displayDayKey();
     if (!dispKey) { heroEl.innerHTML = ""; return; }
     const day = SCHEDULE[dispKey];
     const isToday = dispKey === todayKey;
@@ -300,11 +404,12 @@
     const endLbl = dayEndLabel(day);
 
     if (!isToday) {
-      // preview
+      // preview (domani / giorno selezionato)
       const first = day.entries[0];
+      const nextLbl = isDisplayingNextSchoolDay() ? (isTomorrowSchoolDay(state.now) ? "Domani" : "Prossimo giorno") : "Anteprima";
       heroEl.classList.remove("accent");
       heroEl.innerHTML = `
-        <div class="status-badge status-preview">${svg("sparkle","ic")} Anteprima</div>
+        <div class="status-badge status-preview">${svg("sparkle","ic")} ${nextLbl}</div>
         <p class="meta">${day.label} <span class="sep">·</span> <span class="tnum">${totalH} ore</span> <span class="sep">·</span> <span class="tnum">${svg("clock","ic")} fino alle ${endLbl}</span></p>
         <h2>${first ? esc(first.subject.name) : "Riposo"}</h2>
         ${first ? `<p class="meta">${svg("user","ic")} ${esc(first.subject.teacher)}</p>
@@ -326,18 +431,13 @@
 
     if (isOver) {
       heroEl.classList.remove("accent");
-      // tomorrow preview
+      // prossimo giorno di scuola
       let tmr = "";
-      let d = new Date(now);
-      for (let i=0;i<7;i++){
-        d = new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
-        const k = jsDayToKey(d.getDay());
-        if (k && SCHEDULE[k].entries.length) {
-          const f = SCHEDULE[k].entries[0];
-          tmr = `<div class="hero-foot"><span class="hf-label">${svg("cal","ic")} ${SCHEDULE[k].label}</span>
-            <span class="hf-info">${subjectBadge(f.subject)}<span class="hf-name">${esc(f.subject.name)}</span>${f.hours===2?'<span class="dbl-badge">2h</span>':""}<span class="hf-time tnum">${SLOT_START[0]}</span><span class="hf-sub">${dayHours(SCHEDULE[k])}h → ${dayEndLabel(SCHEDULE[k])}</span></span></div>`;
-          break;
-        }
+      const nextK = nextSchoolDayKey(now);
+      if (nextK) {
+        const f = SCHEDULE[nextK].entries[0];
+        tmr = `<div class="hero-foot"><span class="hf-label">${svg("cal","ic")} ${SCHEDULE[nextK].label}</span>
+          <span class="hf-info">${subjectBadge(f.subject)}<span class="hf-name">${esc(f.subject.name)}</span>${f.hours===2?'<span class="dbl-badge">2h</span>':""}<span class="hf-time tnum">${SLOT_START[0]}</span><span class="hf-sub">${dayHours(SCHEDULE[nextK])}h → ${dayEndLabel(SCHEDULE[nextK])}</span></span></div>`;
       }
       heroEl.innerHTML = `
         <div class="status-badge status-over">${svg("check","ic")} Lezioni terminate</div>
@@ -412,15 +512,17 @@
 
   // ============ TIMELINE ============
   function renderTimeline() {
-    const todayKey = jsDayToKey(state.now.getDay());
-    const dispKey = state.selectedDay || todayKey;
+    const todayKey = actualDayKey(state.now);
+    const dispKey = displayDayKey();
     if (!dispKey) { timelineCard.innerHTML = ""; return; }
     const day = SCHEDULE[dispKey];
     const isToday = dispKey === todayKey;
+    const isNext = !isToday && isDisplayingNextSchoolDay();
     const entries = resolveDay(day, state.now);
     const totalH = dayHours(day);
     const endLbl = dayEndLabel(day);
     const nowMs = state.now.getTime();
+    const titleSuffix = isToday ? "di oggi" : (isNext ? (isTomorrowSchoolDay(state.now) ? "di domani" : "del prossimo giorno") : "di " + day.label);
 
     let rows = "";
     entries.forEach(e => {
@@ -454,7 +556,7 @@
       <div class="card-head">
         <div class="tl-icon">${svg("bell","ic")}</div>
         <div>
-          <div class="tl-title">Programma ${isToday?"di oggi":"di "+day.label}</div>
+          <div class="tl-title">Programma ${titleSuffix}</div>
           <div class="tl-sub tnum">${day.entries.length} materie · ${totalH} ore · fino alle ${endLbl}</div>
         </div>
       </div>
@@ -464,8 +566,8 @@
 
   // ============ STATS ============
   function renderStats() {
-    const todayKey = jsDayToKey(state.now.getDay());
-    const dispKey = state.selectedDay || todayKey;
+    const todayKey = actualDayKey(state.now);
+    const dispKey = displayDayKey();
     if (!dispKey) { statsGrid.innerHTML = ""; return; }
     const day = SCHEDULE[dispKey];
     const isToday = dispKey === todayKey;
@@ -610,17 +712,165 @@
     return key;
   }
 
+  // ============ COMPITI DAL REGISTRO ============
+  function normalizeSubject(name) {
+    const n = String(name || "").toUpperCase().replace(/\s+/g, " ").trim();
+    for (const k of DAY_ORDER) {
+      for (const e of SCHEDULE[k].entries) {
+        if (e.subject.name.toUpperCase() === n) return e.subject;
+      }
+    }
+    // fallback per nomi simili restituiti dal registro
+    if (n.includes("T.P.S.I.T") || n.includes("TPSIT")) return { key: "TPSIT", short: "TPSIT" };
+    if (n.includes("SISTEMI")) return { key: "SISTEMI_RETI", short: "S&R" };
+    if (n.includes("TLC")) return { key: "TLC", short: "TLC" };
+    if (n.includes("INFORM")) return { key: "INFORMATICA", short: "INF" };
+    if (n.includes("ITALIANO")) return { key: "ITALIANO", short: "ITA" };
+    if (n.includes("INGLESE")) return { key: "INGLESE", short: "ING" };
+    if (n.includes("MATEMATICA")) return { key: "MATEMATICA", short: "MAT" };
+    if (n.includes("STORIA")) return { key: "STORIA", short: "STO" };
+    if (n.includes("RELIGIONE")) return { key: "RELIGIONE", short: "REL" };
+    if (n.includes("MOT")) return { key: "SC_MOT_SPORT", short: "MOT" };
+    return { key: "ALTRO", short: n.slice(0, 8) || "MAT" };
+  }
+
+  function fmtDateTime(value) {
+    if (!value) return "mai";
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return "mai";
+    return d.toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+
+  async function loadHomework() {
+    if (state.homework.loading) return;
+    state.homework.loading = true;
+    try {
+      const res = await fetch(CFG.homeworkUrl, { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (!data || !Array.isArray(data.items)) throw new Error("Formato non valido");
+      state.homework.data = data;
+      state.homework.error = null;
+    } catch (e) {
+      state.homework.error = e && e.message ? e.message : "Errore di rete";
+    } finally {
+      state.homework.loading = false;
+      state.homework.lastFetch = Date.now();
+      renderHomework();
+    }
+  }
+
+  function renderHomework() {
+    if (!homeworkCard) return;
+    const hw = state.homework;
+    const data = hw.data;
+    const items = data && Array.isArray(data.items) ? data.items : [];
+    const canRequest = !!CFG.requestEndpoint;
+    const cooling = Date.now() < hw.cooldownUntil;
+    const busy = hw.requesting;
+    const disabled = !canRequest || busy || cooling;
+
+    let status = "";
+    if (hw.requesting) status = `<div class="hw-status hw-status-busy"><span class="hw-spinner"></span> Richiesta inviata, il bot sta aggiornando i compiti…</div>`;
+    else if (hw.message) status = `<div class="hw-status hw-status-ok">${svg("check","ic")} ${esc(hw.message)}</div>`;
+    else if (hw.error) status = `<div class="hw-status hw-status-err">${esc(hw.error)}</div>`;
+
+    let listHtml = "";
+    if (items.length) {
+      listHtml = items.map(it => {
+        const subj = normalizeSubject(it.subject);
+        const c = COLOR[subj.key] || "violet";
+        const emoji = EMOJI[subj.key] || "📚";
+        const when = it.date ? fmtDate(it.date) : "";
+        return `<div class="hw-item">
+          <div class="hw-item-head">
+            <span class="hw-subj c-${c}">${emoji} ${esc(subj.short)}</span>
+            <span class="hw-item-name">${esc(it.subject || subj.short)}</span>
+            ${when ? `<span class="hw-item-date">${svg("cal","ic")} ${esc(when)}</span>` : ""}
+          </div>
+          <div class="hw-text">${esc(it.text || "Nessun dettaglio inserito.")}</div>
+          ${it.elearning ? `<div class="hw-elearning">⚠️ Controlla anche la piattaforma eLearning</div>` : ""}
+        </div>`;
+      }).join("");
+    } else {
+      listHtml = `<div class="notes-empty">${svg("clipboard","ic")}<p>Nessun compito scaricato dal registro.<br>Premi “Richiedi compiti” per aggiornare.</p></div>`;
+    }
+
+    let forLine = "Compiti e argomenti dal registro elettronico";
+    if (data && data.targetDay) forLine = `Per ${data.targetDay}${data.generatedFor ? " · " + fmtDate(data.generatedFor) : ""}`;
+
+    homeworkCard.innerHTML = `
+      <div class="notes-head hw-head">
+        <div class="nh-icon">${svg("clipboard","ic")}</div>
+        <div class="hw-head-text">
+          <div class="hw-title">Compiti dal registro</div>
+          <div class="hw-sub">${esc(forLine)} · aggiornato ${esc(fmtDateTime(data && data.updatedAt))}</div>
+        </div>
+        <button class="hw-refresh ${hw.loading?"spinning":""}" id="hwRefresh" aria-label="Ricarica compiti" title="Ricarica">${svg("refresh","ic")}</button>
+      </div>
+      ${status}
+      <div class="hw-list fancy-scroll">${listHtml}</div>
+      <button class="hw-request" id="hwRequest" ${disabled?"disabled":""}>
+        ${busy ? '<span class="hw-spinner"></span>' : svg("send","ic")}
+        <span>${busy ? "Aggiornamento in corso…" : cooling ? "Attendi prima di riprovare" : "Richiedi compiti"}</span>
+      </button>
+      ${!canRequest ? '<p class="hw-hint">Pulsante non configurato: imposta <code>requestEndpoint</code> in <code>config.js</code> (vedi README).</p>' : ""}
+    `;
+
+    homeworkCard.querySelector("#hwRefresh").addEventListener("click", () => loadHomework());
+    homeworkCard.querySelector("#hwRequest").addEventListener("click", requestHomework);
+  }
+
+  async function requestHomework() {
+    if (!CFG.requestEndpoint || state.homework.requesting) return;
+    const before = state.homework.data ? state.homework.data.updatedAt : null;
+    state.homework.requesting = true;
+    state.homework.message = null;
+    state.homework.error = null;
+    renderHomework();
+    try {
+      const res = await fetch(CFG.requestEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: "orario-3ai", page: location.href, requestedAt: new Date().toISOString() }),
+      });
+      let payload = null;
+      try { payload = await res.json(); } catch {}
+      if (!res.ok) throw new Error(payload && payload.error ? payload.error : "Errore " + res.status);
+
+      state.homework.message = payload && payload.message ? payload.message : "Richiesta inviata al bot.";
+      renderHomework();
+
+      // Attende che il bot aggiorni il file (max ~4 minuti: workflow + deploy Pages).
+      for (let i = 0; i < 48; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        await loadHomework();
+        const now = state.homework.data ? state.homework.data.updatedAt : null;
+        if (now && now !== before) {
+          state.homework.message = "Compiti aggiornati!";
+          break;
+        }
+      }
+      state.homework.cooldownUntil = Date.now() + (CFG.requestCooldownMs || 0);
+    } catch (e) {
+      state.homework.error = e && e.message ? e.message : "Richiesta non riuscita";
+    } finally {
+      state.homework.requesting = false;
+      renderHomework();
+    }
+  }
+
   // ============ WEEK GRID ============
   function renderWeek() {
     const todayKey = jsDayToKey(state.now.getDay());
     const nowMs = state.now.getTime();
     // header
-    let html = `<div class="wg-corner"></div>`;
-    DAY_ORDER.forEach(k => {
+    let html = `<div class="wg-corner" style="grid-row:1;grid-column:1"></div>`;
+    DAY_ORDER.forEach((k, i) => {
       const d = SCHEDULE[k];
       const isToday = k === todayKey;
       const long = dayEndLabel(d) === "14:05";
-      html += `<div class="wg-day ${isToday?"today":""}">
+      html += `<div class="wg-day ${isToday?"today":""}" style="grid-row:1;grid-column:${i+2}" data-day="${k}" role="button" tabindex="0" aria-label="Vedi ${d.label}">
         <div class="wg-day-name">${d.short}</div>
         <div class="wg-day-sub tnum">${dayHours(d)}h → ${dayEndLabel(d)}</div>
         ${long?'<span class="wg-chip">2pm</span>':""}
@@ -629,8 +879,8 @@
     });
     // 6 slot rows
     for (let s=0; s<6; s++) {
-      html += `<div class="wg-time tnum">${SLOT_START[s]}</div>`;
-      DAY_ORDER.forEach(k => {
+      html += `<div class="wg-time tnum" style="grid-row:${s+2};grid-column:1">${SLOT_START[s]}</div>`;
+      DAY_ORDER.forEach((k, i) => {
         const d = SCHEDULE[k];
         const entries = resolveDay(d, state.now);
         const e = entries.find(e => e.startSlot <= s && e.endSlot >= s);
@@ -638,7 +888,7 @@
           const p = e.subject, c = colorOf(p);
           const active = k === todayKey && nowMs >= e.start.getTime() && nowMs < e.end.getTime();
           const span = e.entry.hours;
-          html += `<div class="wg-lesson c-${c} ${active?"active":""}" style="grid-row: ${s+2} / span ${span}">
+          html += `<div class="wg-lesson c-${c} ${active?"active":""}" style="grid-row:${s+2} / span ${span};grid-column:${i+2}">
             <span class="wg-lname">${esc(p.short)}</span>
             <span class="wg-lroom">${svg("pin","ic")} ${esc(p.room)}</span>
             ${span===2?'<span class="wg-ldbl">2h</span>':""}
@@ -646,12 +896,23 @@
           </div>`;
         } else if (!e) {
           const isTodayCol = k === todayKey;
-          html += `<div class="wg-cell ${isTodayCol?"today":""}"></div>`;
+          html += `<div class="wg-cell ${isTodayCol?"today":""}" style="grid-row:${s+2};grid-column:${i+2}"></div>`;
         }
         // else: cell is covered by a spanning lesson above → skip
       });
     }
     weekGrid.innerHTML = html;
+    weekGrid.querySelectorAll(".wg-day[data-day]").forEach(el => {
+      const go = () => {
+        state.selectedDay = el.dataset.day;
+        renderDayTabs();
+        setView("today");
+      };
+      el.addEventListener("click", go);
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+      });
+    });
   }
 
   // ============ TEACHERS ============
@@ -759,6 +1020,12 @@
     state.now = new Date();
     headerClock.textContent = fmtClock(state.now, state.settings.hour24);
     footerClock.textContent = fmtClockFull(state.now, state.settings.hour24);
+    // Cambio automatico alle 14:00 / mezzanotte / domenica
+    const autoKey = autoDayKey(state.now);
+    if (autoKey !== state.lastAutoKey) {
+      state.lastAutoKey = autoKey;
+      if (!state.selectedDay) renderDayTabs();
+    }
     if (state.view === "today") renderToday();
     if (state.view === "week") { renderWeek(); renderYear(yearCard2); }
     if (state.view === "teachers") renderTeachers();
@@ -865,6 +1132,8 @@
     renderDayTabs();
     renderNotes();
     setView(state.view);
+    loadHomework();
+    setInterval(() => loadHomework(), CFG.refreshIntervalMs || 300000);
 
     // events
     $("shareBtn").addEventListener("click", share);
@@ -874,6 +1143,7 @@
     drawerOverlay.addEventListener("click", (e) => { if (e.target === drawerOverlay) closeDrawer(); });
     document.querySelectorAll(".nav-btn").forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
     document.querySelectorAll(".theme-btn").forEach(b => b.addEventListener("click", () => { storeTheme(b.dataset.theme); applyTheme(b.dataset.theme); }));
+    enableDayTabsScrolling();
 
     $("setNotifications").addEventListener("change", (e) => {
       state.settings.notifications = e.target.checked; saveSettings();

@@ -2148,3 +2148,209 @@ ol.timeline {
   padding: 1px 4px;
   border-radius: 0.3rem;
 }
+
+/* ===================================================================
+   DAY TABS — desktop / drag
+   =================================================================== */
+.day-tabs.dragging {
+  cursor: grabbing;
+  user-select: none;
+  scroll-behavior: auto;
+}
+.day-tabs.dragging .day-pill { pointer-events: none; }
+.day-pill { user-select: none; }
+.day-pill.today-shortcut {
+  border-style: dashed;
+  color: var(--primary);
+}
+
+@media (min-width: 640px) {
+  /* Su desktop mostra tutti i giorni senza dover indovinare lo scroll. */
+  .day-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+/* ===================================================================
+   COMPITI DAL REGISTRO
+   =================================================================== */
+.homework-card { padding: 1.25rem; }
+.hw-head { align-items: flex-start; }
+.hw-head-text { flex: 1; min-width: 0; }
+.hw-title { font-weight: 700; font-size: 1.02rem; }
+.hw-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+.hw-refresh {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  flex-shrink: 0;
+  border-radius: 0.65rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.2s ease;
+}
+.hw-refresh:hover { background: var(--muted-bg); color: var(--primary); }
+.hw-refresh svg { width: 15px; height: 15px; }
+.hw-refresh.spinning svg { animation: spin 0.9s linear infinite; }
+
+.hw-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+.hw-status .ic { width: 14px; height: 14px; flex-shrink: 0; }
+.hw-status-busy { background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); }
+.hw-status-ok { background: rgba(16, 185, 129, 0.12); color: #059669; }
+.hw-status-err { background: rgba(220, 38, 38, 0.12); color: #dc2626; }
+
+.hw-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  display: inline-block;
+  flex-shrink: 0;
+  animation: spin 0.8s linear infinite;
+}
+
+.hw-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 0.85rem;
+}
+.hw-item {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+  border-radius: 0.9rem;
+  padding: 0.65rem 0.75rem;
+}
+.hw-item-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.3rem;
+}
+.hw-subj {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  border-radius: 0.4rem;
+  border: 1px solid var(--cbd, var(--border));
+  background: var(--cbg, var(--muted-bg));
+  color: var(--ctx, var(--fg));
+  padding: 0.1rem 0.4rem;
+}
+.hw-item-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.hw-item-date {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+.hw-item-date .ic { width: 11px; height: 11px; }
+.hw-text {
+  font-size: 13.5px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.hw-elearning {
+  margin-top: 0.35rem;
+  font-size: 10.5px;
+  color: #d97706;
+}
+.hw-request {
+  width: 100%;
+  min-height: 44px;
+  border: none;
+  border-radius: 0.85rem;
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 60%, var(--accent)));
+  color: var(--primary-fg);
+  font-weight: 700;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--primary) 60%, transparent);
+  transition: opacity 0.18s ease, transform 0.12s ease;
+}
+.hw-request:hover:not(:disabled) { opacity: 0.92; }
+.hw-request:active:not(:disabled) { transform: scale(0.985); }
+.hw-request:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+.hw-request .ic { width: 16px; height: 16px; }
+.hw-hint {
+  margin-top: 0.5rem;
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.hw-hint code {
+  font-size: 10px;
+  background: var(--muted-bg);
+  border-radius: 0.3rem;
+  padding: 0.05rem 0.25rem;
+}
+
+/* Desktop largo: più spazio per la settimana e per tutti i giorni. */
+@media (min-width: 900px) {
+  .header-inner,
+  .main,
+  .footer-inner {
+    max-width: 880px;
+  }
+}
+
+/* Header settimana: evita sovrapposizioni tra chip 2pm e badge Oggi. */
+.wg-day { position: relative; }
+.wg-today {
+  position: static;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  background: transparent;
+  color: var(--primary);
+  padding: 0;
+  border-radius: 0;
+  animation: none;
+}
+
+/* Intestazioni giorni della settimana cliccabili */
+.wg-day[data-day] { cursor: pointer; transition: background .18s ease, transform .12s ease; }
+.wg-day[data-day]:hover { background: color-mix(in srgb, var(--primary) 12%, var(--muted-bg)); }
+.wg-day[data-day]:active { transform: scale(0.98); }
