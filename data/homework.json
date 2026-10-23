@@ -1,7 +1,40 @@
 {
-  "updatedAt": null,
-  "generatedFor": null,
-  "targetDay": null,
+  "updatedAt": "2026-10-23T21:13:39+02:00",
+  "generatedFor": "2026-10-24",
+  "targetDay": "Sabato",
   "source": "registro",
-  "items": []
+  "items": [
+    {
+      "subjectId": 13,
+      "subject": "ITALIANO",
+      "text": "21/10: Verifica orale.\n17/10: ED. CIVICA: Educazione alla legalità e contrasto alle mafie. Principio di legalità.",
+      "date": "2026-10-21",
+      "elearning": false,
+      "status": "ok"
+    },
+    {
+      "subjectId": 3,
+      "subject": "INFORMATICA",
+      "text": "23/10: Ripasso sulla sintassi del C++.\n21/10: Correzione esercizi con verifiche. Esercitazione.",
+      "date": "2026-10-23",
+      "elearning": true,
+      "status": "ok"
+    },
+    {
+      "subjectId": 6,
+      "subject": "INGLESE",
+      "text": "23/10: Oral test.\n16/10: Attività di rinforzo.",
+      "date": "2026-10-23",
+      "elearning": false,
+      "status": "ok"
+    },
+    {
+      "subjectId": 39,
+      "subject": "TLC",
+      "text": "Cenni sulla corrente",
+      "date": "2026-09-21",
+      "elearning": true,
+      "status": "ok"
+    }
+  ]
 }
